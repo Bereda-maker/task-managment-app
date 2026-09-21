@@ -1,0 +1,27 @@
+{
+  "name": "@taskboard/api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "build": "echo 'API runs directly on Bun \u2014 no build step'",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun src/db/migrate.ts",
+    "demo:n-plus-one": "bun scripts/n-plus-one.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.3",
+    "hono": "^4.13.8",
+    "postgres": "^3.4.9",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,4 @@
+[test]
+# Sets env vars, points DB at the disposable test database and runs migrations
+# before any test file (and therefore any app code) is imported.
+preload = ["./test/setup.ts"]
