@@ -1,0 +1,17 @@
+{
+  "name": "taskboard",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Task Management Application — React + Vite SPA, Hono API on Bun, PostgreSQL (Project 2 of Build 10 Real-World Projects)",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "test": "bun run --filter '*' test",
+    "typecheck": "bun run --filter '*' typecheck",
+    "build": "bun run --filter '*' build",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:generate": "bun run --filter @taskboard/api db:generate",
+    "db:migrate": "bun run --filter @taskboard/api db:migrate"
+  }
+}

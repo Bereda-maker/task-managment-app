@@ -1,0 +1,41 @@
+# Local databases only — the API and web app run on your machine (bun run dev).
+# Running the databases in containers means no Postgres install, no version conflicts,
+# and the same habit real teams use.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: taskboard
+      POSTGRES_PASSWORD: taskboard
+      POSTGRES_DB: taskboard
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskboard -d taskboard"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  # Disposable database for `bun test`: data lives in RAM (tmpfs) and fsync is off,
+  # so the suite is fast and every `docker compose down` wipes it.
+  db-test:
+    image: postgres:16-alpine
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+    environment:
+      POSTGRES_USER: taskboard
+      POSTGRES_PASSWORD: taskboard
+      POSTGRES_DB: taskboard_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskboard -d taskboard_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
