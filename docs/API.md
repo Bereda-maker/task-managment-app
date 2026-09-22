@@ -10,7 +10,7 @@ Base URL in development: `http://localhost:3000`. All bodies are JSON.
 | 401 | `UNAUTHORIZED` (no token), `TOKEN_EXPIRED` (refresh and retry), `INVALID_TOKEN`, `INVALID_CREDENTIALS`, `NO_SESSION`, `INVALID_REFRESH_TOKEN` |
 | 403 | `FORBIDDEN` |
 | 404 | `NOT_FOUND`, `USER_NOT_FOUND` |
-| 409 | `EMAIL_TAKEN`, `ALREADY_MEMBER`, `OWNER_CANNOT_LEAVE` |
+| 409 | `EMAIL_TAKEN`, `ALREADY_MEMBER`, `OWNER_CANNOT_LEAVE`, `TASK_LIMIT_REACHED` |
 | 413 | `PAYLOAD_TOO_LARGE` (> 100 KB) |
 | 429 | `RATE_LIMITED` (with `Retry-After`) |
 | 500 | `INTERNAL_ERROR` |
@@ -49,6 +49,11 @@ Protected endpoints need `Authorization: Bearer <accessToken>`.
 | `PATCH /tasks/:id` | Any subset of `{ title, status, assigneeId, dueDate }`; `null` clears assignee/due date. Unknown fields (e.g. `boardId`) are ignored. |
 | `DELETE /tasks/:id` | Any board member |
 
-## Health
+## Probes
 
-`GET /health` → `{ "status": "ok" }` (also checks the database connection).
+| Path | Checks | Use for |
+|---|---|---|
+| `GET /health` | Nothing but "is the process up" | Liveness — never fails because of the database, so an outage doesn't get the process killed and restarted in a loop |
+| `GET /ready` | A live database query; `503 SHUTTING_DOWN` while the process is draining for shutdown | Readiness — whether a load balancer should send traffic here |
+
+Every response also carries `X-Request-Id` (generated, or echoed back if the caller sent one and it looks like a safe id) and `Cache-Control: no-store`.
