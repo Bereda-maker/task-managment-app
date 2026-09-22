@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { sign } from "hono/jwt";
-import { loginLimiter } from "../src/routes/auth";
+import { loginLimiter, registerLimiter } from "../src/routes/auth";
 import { api, json, refreshCookieFrom, registerUser, resetDb } from "./helpers";
 
 beforeEach(async () => {
   await resetDb();
   loginLimiter.reset();
+  registerLimiter.reset();
 });
 
 const creds = { name: "Ada Lovelace", email: "ada@example.com", password: "correct-horse-battery" };

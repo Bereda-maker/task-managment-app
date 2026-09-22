@@ -1,5 +1,6 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { config } from "../config";
 import { db } from "../db/client";
 import { boardMembers, boards, tasks, users } from "../db/schema";
 import { conflict, forbidden, notFound } from "../errors";
@@ -165,6 +166,16 @@ boardRoutes.post("/:id/tasks", async (c) => {
   const body = await parseBody(c, CreateTask);
   await requireBoardMember(boardId, userId);
   if (body.assigneeId) await assertAssigneeIsMember(boardId, body.assigneeId);
+
+  // The board endpoint returns every task, so the number per board is bounded (soft limit:
+  // two simultaneous creates at the boundary can overshoot by a task or two, which is fine).
+  const [{ total } = { total: 0 }] = await db.select({ total: count() }).from(tasks).where(eq(tasks.boardId, boardId));
+  if (total >= config.MAX_TASKS_PER_BOARD) {
+    throw conflict(
+      `This board has reached its limit of ${config.MAX_TASKS_PER_BOARD} tasks. Delete finished tasks or start a new board.`,
+      "TASK_LIMIT_REACHED",
+    );
+  }
 
   const [created] = await db
     .insert(tasks)

@@ -1,11 +1,13 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
+  check,
   date,
   index,
   pgTable,
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -23,14 +25,18 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const boards = pgTable("boards", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  ownerId: uuid("owner_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const boards = pgTable(
+  "boards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [check("boards_name_length", sql`char_length(btrim(${t.name})) between 1 and 80`)],
+);
 
 // Who can see and edit a board. The owner is also a member (role = "owner").
 export const boardMembers = pgTable(
@@ -45,7 +51,14 @@ export const boardMembers = pgTable(
     role: text("role", { enum: BOARD_ROLES }).notNull().default("member"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.boardId, t.userId] }), index("board_members_user_idx").on(t.userId)],
+  (t) => [
+    primaryKey({ columns: [t.boardId, t.userId] }),
+    index("board_members_user_idx").on(t.userId),
+    // The TypeScript enum above is compile-time only; these make Postgres enforce it too.
+    check("board_members_role_valid", sql`${t.role} in ('owner', 'member')`),
+    // A board has at most one owner.
+    uniqueIndex("board_members_one_owner_idx").on(t.boardId).where(sql`${t.role} = 'owner'`),
+  ],
 );
 
 export const tasks = pgTable(
@@ -66,6 +79,8 @@ export const tasks = pgTable(
   (t) => [
     index("tasks_board_idx").on(t.boardId),
     index("tasks_assignee_idx").on(t.assigneeId),
+    check("tasks_status_valid", sql`${t.status} in ('todo', 'in_progress', 'done')`),
+    check("tasks_title_length", sql`char_length(btrim(${t.title})) between 1 and 200`),
   ],
 );
 
@@ -82,7 +97,10 @@ export const refreshTokens = pgTable(
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("refresh_tokens_user_idx").on(t.userId)],
+  (t) => [
+    index("refresh_tokens_user_idx").on(t.userId),
+    index("refresh_tokens_expires_idx").on(t.expiresAt), // for the periodic purge of dead tokens
+  ],
 );
 
 // --- Relations (power Drizzle's relational query API: one round trip, no N+1) ---

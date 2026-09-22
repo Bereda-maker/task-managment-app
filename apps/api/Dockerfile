@@ -18,6 +18,13 @@ WORKDIR /app/apps/api
 USER bun
 EXPOSE 3000
 
-# A long-lived Bun process. Set MIGRATE_ON_START=true to apply migrations at boot, or run
-# `bun run db:migrate` as your platform's release command instead.
+# GET /health needs no dependencies (no curl/wget in this image), so the check is a one-line
+# Bun script. Liveness only — it must NOT depend on the database (see docs/DEPLOYMENT.md).
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
+  CMD bun -e "fetch('http://localhost:' + (process.env.PORT || 3000) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+# A long-lived Bun process. Handles SIGTERM gracefully (see src/index.ts): stops accepting new
+# requests, lets in-flight ones finish, closes the DB pool, then exits.
+# Set MIGRATE_ON_START=true to apply migrations at boot, or run `bun run db:migrate` as your
+# platform's release command instead.
 CMD ["bun", "src/index.ts"]

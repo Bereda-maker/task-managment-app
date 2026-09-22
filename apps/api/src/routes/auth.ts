@@ -19,6 +19,12 @@ export const loginLimiter = rateLimit({
   message: "Too many login attempts. Please wait a few minutes and try again.",
 });
 
+export const registerLimiter = rateLimit({
+  max: config.REGISTER_RATE_LIMIT_MAX,
+  windowMs: config.REGISTER_RATE_LIMIT_WINDOW_SECONDS * 1000,
+  message: "Too many sign-ups from this network. Please try again later.",
+});
+
 const cookieOptions = {
   httpOnly: true, // invisible to JavaScript, so an XSS bug can't read it
   secure: config.cookie.secure,
@@ -38,7 +44,7 @@ const publicUser = { id: users.id, name: users.name, email: users.email };
 
 export const authRoutes = new Hono<AppEnv>();
 
-authRoutes.post("/register", async (c) => {
+authRoutes.post("/register", registerLimiter, async (c) => {
   const body = await parseBody(c, RegisterBody);
 
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, body.email)).limit(1);

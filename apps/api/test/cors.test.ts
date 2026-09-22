@@ -34,12 +34,6 @@ describe("CORS", () => {
 });
 
 describe("misc", () => {
-  it("/health checks the database", async () => {
-    const res = await app.request("/health");
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: "ok" });
-  });
-
   it("unknown routes return the standard { error, code } shape", async () => {
     const res = await app.request("/nope");
     expect(res.status).toBe(404);

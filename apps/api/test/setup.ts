@@ -26,6 +26,9 @@ Object.assign(process.env, {
   LOGIN_RATE_LIMIT_MAX: "5",
   LOGIN_RATE_LIMIT_WINDOW_SECONDS: "60",
   TRUST_PROXY: "true", // lets tests choose the "client IP" via X-Forwarded-For
+  LOG_LEVEL: "silent",
+  API_RATE_LIMIT_MAX: "40",
+  MAX_TASKS_PER_BOARD: "5",
 });
 
 await runMigrations(url);

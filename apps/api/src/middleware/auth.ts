@@ -1,4 +1,5 @@
 import { createMiddleware } from "hono/factory";
+import { z } from "zod";
 import { verify } from "hono/jwt";
 import { JwtTokenExpired } from "hono/utils/jwt/types";
 import { config } from "../config";
@@ -19,8 +20,8 @@ export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
 
   try {
     const payload = await verify(token, config.JWT_SECRET, "HS256");
-    if (typeof payload.sub !== "string") throw new Error("token has no subject");
-    c.set("userId", payload.sub);
+    // Defence in depth: only ever hand the database something shaped like a user id.
+    c.set("userId", z.uuid().parse(payload.sub));
   } catch (err) {
     if (err instanceof JwtTokenExpired) throw unauthorized("Access token expired", "TOKEN_EXPIRED");
     throw unauthorized("Invalid access token", "INVALID_TOKEN");
